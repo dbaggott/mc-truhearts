@@ -42,6 +42,12 @@ public final class HpReadout {
 	private static final int ROW_HEIGHT = 10;
 	/** Soft red — closer to the heart color than pure red, easier on eyes. */
 	private static final int COLOR_HP = 0xFFFF5555;
+	/**
+	 * Soft gold for the absorption portion of the line — same brightness
+	 * envelope as {@link #COLOR_HP} so the two segments feel like a pair
+	 * rather than one bright and one washed out.
+	 */
+	private static final int COLOR_ABSORPTION = 0xFFFFCC55;
 
 	/**
 	 * Vanilla's regular full-heart sprite from the HUD atlas. Found via
@@ -51,6 +57,11 @@ public final class HpReadout {
 	 * with what's already on screen.
 	 */
 	private static final Identifier HEART_ICON = Identifier.fromNamespaceAndPath("minecraft", "hud/heart/full");
+	/**
+	 * Vanilla's golden absorption heart sprite ({@code Hud.HeartType.ABSORBING}'s
+	 * {@code full}). Used as the label for the absorption portion of the line.
+	 */
+	private static final Identifier ABSORPTION_HEART_ICON = Identifier.fromNamespaceAndPath("minecraft", "hud/heart/absorbing_full");
 	/** Vanilla heart sprite is 9×9 px. */
 	private static final int ICON_WIDTH = 9;
 	private static final int ICON_HEIGHT = 9;
@@ -112,33 +123,42 @@ public final class HpReadout {
 
 		// Label: a real heart icon so the floating numbers are self-
 		// identifying even when armor/absorption rows push them far above
-		// the vanilla heart bar. A 1-px black outline is added by stamping
-		// the heart in solid black at the four cardinal +/-1 offsets first,
-		// then the real red heart on top. The tint preserves the sprite's
-		// alpha, so the outline traces the heart's actual silhouette
-		// rather than a square box around it.
+		// the vanilla heart bar. Each icon gets a 1-px black outline drawn
+		// by stampOutlinedSprite below.
 		int iconY = y + ICON_Y_NUDGE;
-		extractor.blitSprite(RenderPipelines.GUI_TEXTURED, HEART_ICON, x - OUTLINE_WIDTH, iconY,                 ICON_WIDTH, ICON_HEIGHT, OUTLINE_COLOR);
-		extractor.blitSprite(RenderPipelines.GUI_TEXTURED, HEART_ICON, x + OUTLINE_WIDTH, iconY,                 ICON_WIDTH, ICON_HEIGHT, OUTLINE_COLOR);
-		extractor.blitSprite(RenderPipelines.GUI_TEXTURED, HEART_ICON, x,                  iconY - OUTLINE_WIDTH, ICON_WIDTH, ICON_HEIGHT, OUTLINE_COLOR);
-		extractor.blitSprite(RenderPipelines.GUI_TEXTURED, HEART_ICON, x,                  iconY + OUTLINE_WIDTH, ICON_WIDTH, ICON_HEIGHT, OUTLINE_COLOR);
-		extractor.blitSprite(RenderPipelines.GUI_TEXTURED, HEART_ICON, x,                  iconY,                 ICON_WIDTH, ICON_HEIGHT);
+		stampOutlinedSprite(extractor, HEART_ICON, x, iconY);
 		int textX = x + ICON_WIDTH + OUTLINE_WIDTH + ICON_TEXT_GAP;
 
-		String text = formatHp(player.getHealth(), player.getMaxHealth(), absorption);
-		extractor.text(font, text, textX, y, COLOR_HP, true);
+		String hpText = String.format("%.2f / %.0f", player.getHealth(), player.getMaxHealth());
+		extractor.text(font, hpText, textX, y, COLOR_HP, true);
+
+		// When absorption is active, append a second segment: a gold heart
+		// icon (the same sprite vanilla uses for absorption hearts) and the
+		// absorption float in gold text. The pairing matches the vanilla
+		// red-vs-gold heart distinction on screen.
+		if (absorption > 0) {
+			int afterHpX = textX + font.width(hpText);
+			int goldIconX = afterHpX + ICON_TEXT_GAP + OUTLINE_WIDTH;
+			stampOutlinedSprite(extractor, ABSORPTION_HEART_ICON, goldIconX, iconY);
+
+			int absTextX = goldIconX + ICON_WIDTH + OUTLINE_WIDTH + ICON_TEXT_GAP;
+			String absText = String.format("+ %.2f", absorption);
+			extractor.text(font, absText, absTextX, y, COLOR_ABSORPTION, true);
+		}
 	}
 
 	/**
-	 * Renders HP as {@code "X.XX / Y"} normally, extending to
-	 * {@code "X.XX / Y + Z.ZZ"} when absorption is active so the hidden
-	 * float behind the gold hearts is visible. Absorption is omitted when
-	 * zero to keep the line short during regular play.
+	 * Renders a HUD-atlas sprite with a 1-px black outline by stamping the
+	 * sprite tinted solid black at the four cardinal +/-1 offsets, then the
+	 * untinted sprite on top. The black tint preserves the sprite's alpha,
+	 * so the outline traces the sprite's silhouette rather than a square
+	 * box around it.
 	 */
-	private static String formatHp(float health, float max, float absorption) {
-		if (absorption > 0) {
-			return String.format("%.2f / %.0f + %.2f", health, max, absorption);
-		}
-		return String.format("%.2f / %.0f", health, max);
+	private static void stampOutlinedSprite(GuiGraphicsExtractor extractor, Identifier sprite, int x, int y) {
+		extractor.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x - OUTLINE_WIDTH, y,                 ICON_WIDTH, ICON_HEIGHT, OUTLINE_COLOR);
+		extractor.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x + OUTLINE_WIDTH, y,                 ICON_WIDTH, ICON_HEIGHT, OUTLINE_COLOR);
+		extractor.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x,                  y - OUTLINE_WIDTH, ICON_WIDTH, ICON_HEIGHT, OUTLINE_COLOR);
+		extractor.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x,                  y + OUTLINE_WIDTH, ICON_WIDTH, ICON_HEIGHT, OUTLINE_COLOR);
+		extractor.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x,                  y,                 ICON_WIDTH, ICON_HEIGHT);
 	}
 }
