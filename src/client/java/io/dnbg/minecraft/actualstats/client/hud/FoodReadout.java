@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.food.FoodData;
 
 /**
@@ -25,6 +26,12 @@ public final class FoodReadout {
 	private static final int HOTBAR_HALF_WIDTH = 91;
 	private static final int FOOD_BAR_BOTTOM_OFFSET = 39;
 	private static final int Y_GAP_ABOVE_BAR = 10;
+	/**
+	 * Height of one HUD icon row (food / oxygen / mount-health bars all use
+	 * this pitch). We stack our text above any row vanilla is currently
+	 * drawing in the area above the food bar.
+	 */
+	private static final int ROW_HEIGHT = 10;
 	/** Soft amber — easier on the eyes than the saturated drumstick orange. */
 	private static final int COLOR_FOOD = 0xFFCC9966;
 
@@ -66,11 +73,24 @@ public final class FoodReadout {
 		FoodData food = player.getFoodData();
 		String text = format(food);
 
+		// Mirror the HpReadout treatment for the food side: stack our text
+		// above any row vanilla is currently drawing above the food bar.
+		// The food side's "extras" are oxygen bubbles (when underwater or
+		// regenerating air after surfacing) and the mount-health bar (when
+		// riding a LivingEntity — boats / minecarts don't show one).
+		int yGap = Y_GAP_ABOVE_BAR;
+		if (player.getAirSupply() < player.getMaxAirSupply()) {
+			yGap += ROW_HEIGHT;
+		}
+		if (player.isPassenger() && player.getVehicle() instanceof LivingEntity) {
+			yGap += ROW_HEIGHT;
+		}
+
 		// Right-align the text to the hotbar's right edge so it parents
 		// visually to the food bar, mirroring the HP readout's left edge.
 		int rightX = screenWidth / 2 + HOTBAR_HALF_WIDTH;
 		int x = rightX - font.width(text);
-		int y = screenHeight - FOOD_BAR_BOTTOM_OFFSET - Y_GAP_ABOVE_BAR;
+		int y = screenHeight - FOOD_BAR_BOTTOM_OFFSET - yGap;
 
 		extractor.text(font, text, x, y, COLOR_FOOD, true);
 	}
