@@ -60,7 +60,7 @@ public final class HpReadout {
 		int x = screenWidth / 2 - HOTBAR_HALF_WIDTH;
 		int y = screenHeight - HEART_BAR_BOTTOM_OFFSET - Y_GAP_ABOVE_BAR;
 
-		String text = String.format("%.1f / %.0f", player.getHealth(), player.getMaxHealth());
+		String text = String.format("%.2f / %.0f", player.getHealth(), player.getMaxHealth());
 		extractor.text(font, text, x, y, COLOR_HP, true);
 	}
 }
