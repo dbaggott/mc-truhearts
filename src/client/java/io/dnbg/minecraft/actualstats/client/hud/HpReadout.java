@@ -27,11 +27,17 @@ public final class HpReadout {
 	 */
 	private static final int HEART_BAR_BOTTOM_OFFSET = 39;
 	/**
-	 * Gap between the heart bar's top and our text. 10 px clears the bar
-	 * with a tiny breathing margin and leaves room for absorption hearts
-	 * that stack above on the same Y.
+	 * Base gap between the heart bar's top and our text — the "no armor,
+	 * no absorption" case. Additional rows above the hearts shift our text
+	 * up by {@link #ROW_HEIGHT} each.
 	 */
 	private static final int Y_GAP_ABOVE_BAR = 10;
+	/**
+	 * Height of one HUD icon row (hearts / armor / absorption all use this
+	 * pitch). Used to stack our text above any row vanilla is currently
+	 * drawing in the area immediately above the hearts.
+	 */
+	private static final int ROW_HEIGHT = 10;
 	/** Soft red — closer to the heart color than pure red, easier on eyes. */
 	private static final int COLOR_HP = 0xFFFF5555;
 
@@ -57,10 +63,36 @@ public final class HpReadout {
 		int screenWidth = mc.getWindow().getGuiScaledWidth();
 		int screenHeight = mc.getWindow().getGuiScaledHeight();
 
-		int x = screenWidth / 2 - HOTBAR_HALF_WIDTH;
-		int y = screenHeight - HEART_BAR_BOTTOM_OFFSET - Y_GAP_ABOVE_BAR;
+		// Stack our text above any rows the vanilla HUD is currently drawing
+		// in the band immediately above the hearts (armor icons; absorption
+		// hearts). Each present row takes one ROW_HEIGHT slice, so we offset
+		// up by the sum to land in clean airspace above all of them.
+		int yGap = Y_GAP_ABOVE_BAR;
+		float absorption = player.getAbsorptionAmount();
+		if (absorption > 0) {
+			yGap += ROW_HEIGHT;
+		}
+		if (player.getArmorValue() > 0) {
+			yGap += ROW_HEIGHT;
+		}
 
-		String text = String.format("%.2f / %.0f", player.getHealth(), player.getMaxHealth());
+		int x = screenWidth / 2 - HOTBAR_HALF_WIDTH;
+		int y = screenHeight - HEART_BAR_BOTTOM_OFFSET - yGap;
+
+		String text = formatHp(player.getHealth(), player.getMaxHealth(), absorption);
 		extractor.text(font, text, x, y, COLOR_HP, true);
+	}
+
+	/**
+	 * Renders HP as {@code "X.XX / Y"} normally, extending to
+	 * {@code "X.XX / Y + Z.ZZ"} when absorption is active so the hidden
+	 * float behind the gold hearts is visible. Absorption is omitted when
+	 * zero to keep the line short during regular play.
+	 */
+	private static String formatHp(float health, float max, float absorption) {
+		if (absorption > 0) {
+			return String.format("%.2f / %.0f + %.2f", health, max, absorption);
+		}
+		return String.format("%.2f / %.0f", health, max);
 	}
 }
