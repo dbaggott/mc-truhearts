@@ -19,7 +19,7 @@ loom {
 	splitEnvironmentSourceSets()
 
 	mods {
-		"truehearts" {
+		"truhearts" {
 			sourceSet sourceSets.main
 			sourceSet sourceSets.client
 		}
@@ -118,13 +118,18 @@ publishMods {
 		projectId = providers.gradleProperty('modrinth_project_id').getOrElse('PLACEHOLDER_SET_ME')
 		accessToken = providers.environmentVariable("MODRINTH_API_KEY")
 		minecraftVersions.add("26.2")
+		// Per-version environment metadata. The mod runs only on the client;
+		// declaring this explicitly is what Modrinth moderators flagged on the
+		// initial v1.0.0 submission (the project-level client_side / server_side
+		// in metadata.json is separate and already correct).
+		environment = CLIENT_ONLY
 		requires {
 			slug = "fabric-api"
 		}
 	}
 
 	github {
-		repository = "dbaggott/mc-truehearts"
+		repository = "dbaggott/mc-truhearts"
 		accessToken = providers.environmentVariable("GITHUB_TOKEN")
 		// Pin the release/tag to the actual commit being built. On a
 		// tag-push trigger GITHUB_SHA is the tagged commit; on a

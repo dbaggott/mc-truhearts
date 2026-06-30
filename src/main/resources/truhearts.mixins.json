@@ -1,6 +1,6 @@
 {
 	"required": true,
-	"package": "io.dnbg.minecraft.truehearts.mixin",
+	"package": "io.dnbg.minecraft.truhearts.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [],
 	"injectors": {

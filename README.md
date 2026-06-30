@@ -1,10 +1,10 @@
-# TrueHearts
+# TruHearts
 
-[![Modrinth downloads](https://img.shields.io/modrinth/dt/dnbg-truehearts?label=downloads&logo=modrinth&color=00AF5C)](https://modrinth.com/mod/dnbg-truehearts)
-[![Modrinth game versions](https://img.shields.io/modrinth/game-versions/dnbg-truehearts?logo=modrinth&color=00AF5C&label=for%20MC)](https://modrinth.com/mod/dnbg-truehearts)
-[![Latest release](https://img.shields.io/github/v/release/dbaggott/mc-truehearts?logo=github&label=release)](https://github.com/dbaggott/mc-truehearts/releases/latest)
-[![Build](https://img.shields.io/github/actions/workflow/status/dbaggott/mc-truehearts/build.yml?branch=main&logo=github&label=build)](https://github.com/dbaggott/mc-truehearts/actions/workflows/build.yml)
-[![License](https://img.shields.io/github/license/dbaggott/mc-truehearts)](LICENSE)
+[![Modrinth downloads](https://img.shields.io/modrinth/dt/dnbg-truhearts?label=downloads&logo=modrinth&color=00AF5C)](https://modrinth.com/mod/dnbg-truhearts)
+[![Modrinth game versions](https://img.shields.io/modrinth/game-versions/dnbg-truhearts?logo=modrinth&color=00AF5C&label=for%20MC)](https://modrinth.com/mod/dnbg-truhearts)
+[![Latest release](https://img.shields.io/github/v/release/dbaggott/mc-truhearts?logo=github&label=release)](https://github.com/dbaggott/mc-truhearts/releases/latest)
+[![Build](https://img.shields.io/github/actions/workflow/status/dbaggott/mc-truhearts/build.yml?branch=main&logo=github&label=build)](https://github.com/dbaggott/mc-truhearts/actions/workflows/build.yml)
+[![License](https://img.shields.io/github/license/dbaggott/mc-truhearts)](LICENSE)
 
 A small client-side Minecraft mod (Fabric) that surfaces the *real* numerical health and damage values the game uses internally — no rounding to half-hearts.
 
@@ -38,9 +38,9 @@ Prerequisites: `mise`, `git`.
 
 ```bash
 git clone <repo-url>
-cd truehearts
+cd truhearts
 mise install        # provisions Temurin 25 per mise.toml
-./gradlew build     # produces build/libs/truehearts-<version>.jar
+./gradlew build     # produces build/libs/truhearts-<version>.jar
 ```
 
 ## Develop in IntelliJ IDEA
@@ -51,7 +51,7 @@ mise install        # provisions Temurin 25 per mise.toml
 
 ## Install the built jar into a real instance
 
-Drop `build/libs/truehearts-<version>.jar` (the un-suffixed file — not `-sources` or `-dev`) into your Minecraft instance's `mods/` folder, alongside Fabric Loader and Fabric API jars matching the versions above.
+Drop `build/libs/truhearts-<version>.jar` (the un-suffixed file — not `-sources` or `-dev`) into your Minecraft instance's `mods/` folder, alongside Fabric Loader and Fabric API jars matching the versions above.
 
 ## Project layout
 
@@ -60,9 +60,9 @@ build.gradle, settings.gradle, gradle.properties   — build config
 mise.toml                                            — JDK pin (Temurin 25)
 src/main/                                            — shared (client + server) code
 src/main/resources/fabric.mod.json                   — mod metadata
-src/main/resources/truehearts.mixins.json          — shared mixin config
+src/main/resources/truhearts.mixins.json          — shared mixin config
 src/client/                                          — client-only code (HUD lives here)
-src/client/resources/truehearts.client.mixins.json — client mixin config
+src/client/resources/truhearts.client.mixins.json — client mixin config
 .github/workflows/build.yml                          — CI: gradle build on push/PR
 ```
 
@@ -75,9 +75,9 @@ To start another mod from this scaffold, the pieces that need changing are, top 
 1. `settings.gradle` — `rootProject.name`
 2. `gradle.properties` — `mod_version`; bump MC/loader/API versions as needed
 3. `fabric.mod.json` — `id`, `name`, `description`, `entrypoints`, `mixins`
-4. **Package rename** — `src/{main,client}/java/io/dnbg/minecraft/truehearts/` → `…/<newmod>/`; update imports
-5. **Mixin configs** — rename `truehearts.mixins.json` / `truehearts.client.mixins.json` to match the new mod id; update their `package` fields and the `mixins` reference in `fabric.mod.json`
-6. `assets/truehearts/` → `assets/<newmod>/`
+4. **Package rename** — `src/{main,client}/java/io/dnbg/minecraft/truhearts/` → `…/<newmod>/`; update imports
+5. **Mixin configs** — rename `truhearts.mixins.json` / `truhearts.client.mixins.json` to match the new mod id; update their `package` fields and the `mixins` reference in `fabric.mod.json`
+6. `assets/truhearts/` → `assets/<newmod>/`
 7. `README.md` content
 8. `LICENSE` — keep MIT or replace
 

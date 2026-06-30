@@ -1,4 +1,4 @@
-package io.dnbg.minecraft.truehearts;
+package io.dnbg.minecraft.truhearts;
 
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.resources.Identifier;
@@ -10,10 +10,10 @@ import org.slf4j.LoggerFactory;
  * as client-only (see {@code fabric.mod.json}'s {@code "environment"}).
  *
  * <p>Keep this thin — HUD and other client-only wiring live in
- * {@link io.dnbg.minecraft.truehearts.client.TrueHeartsClient}.
+ * {@link io.dnbg.minecraft.truhearts.client.TruHeartsClient}.
  */
-public class TrueHearts implements ModInitializer {
-	public static final String MOD_ID = "truehearts";
+public class TruHearts implements ModInitializer {
+	public static final String MOD_ID = "truhearts";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	@Override
