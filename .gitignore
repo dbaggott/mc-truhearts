@@ -27,8 +27,3 @@ bin/
 # mise local-only overrides (the committed mise.toml is the canonical pin)
 .mise.local.toml
 
-# Stray Minecraft-format screenshots accidentally left in .modrinth/gallery/
-# — gallery is manifest-driven (.modrinth/gallery.json), so files not in
-# the manifest are ignored by the sync anyway; this just keeps `git status`
-# clean.
-.modrinth/gallery/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_*.png
