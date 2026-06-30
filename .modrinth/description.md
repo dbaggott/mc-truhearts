@@ -26,7 +26,3 @@ That's it. One small overlay, one line of text. Half-second to learn, instant to
 - Doesn't show other entities' HP yet (planned for a future version).
 - Doesn't show a damage-dealt number on attack yet (planned for a future version).
 - Doesn't show food saturation or exhaustion (intentionally cut — those values aren't reliably available client-side on multiplayer servers, and we'd rather ship nothing than something wrong).
-
-## Source
-
-[github.com/dbaggott/mc-true-health](https://github.com/dbaggott/mc-true-health) — MIT licensed.
