@@ -1,0 +1,53 @@
+name: auto-tag
+
+# When gradle.properties' mod_version changes on main, create the
+# matching v<version> tag and push it. That tag push fires release.yml,
+# which builds + publishes to Modrinth and GitHub Releases. End-to-end
+# this means a single PR-merge per release: bump mod_version on a
+# branch, PR, merge, done.
+#
+# Safeguards (all implicit, no extra logic needed):
+#   - Non-version changes to gradle.properties: PREV == CUR, no-op.
+#   - Version reverts / re-uses an existing tag: tag exists, no-op.
+#   - Skipped versions (0.2.0 -> 0.4.0): tag v0.4.0, that's the release.
+#   - Re-publishing requires deleting the tag first — accidental
+#     clobber prevention.
+on:
+  push:
+    branches: [main]
+    paths: ['gradle.properties']
+
+permissions:
+  contents: write   # to create and push the tag
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2          # previous commit needed for the diff
+          fetch-tags: true        # see existing tags for the skip check
+
+      - name: Tag if mod_version increased
+        run: |
+          set -euo pipefail
+          PREV=$(git show HEAD~1:gradle.properties | grep '^mod_version=' | cut -d= -f2)
+          CUR=$(  grep                '^mod_version=' gradle.properties      | cut -d= -f2)
+          echo "previous mod_version: $PREV"
+          echo "current  mod_version: $CUR"
+
+          if [ "$PREV" = "$CUR" ]; then
+            echo "mod_version unchanged — nothing to tag."
+            exit 0
+          fi
+          if git rev-parse "v$CUR" >/dev/null 2>&1; then
+            echo "tag v$CUR already exists — refusing to clobber. Delete the tag manually if you mean to re-release."
+            exit 0
+          fi
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$CUR" -m "v$CUR"
+          git push origin "v$CUR"
+          echo "Pushed tag v$CUR — release.yml will fire on the tag-push event."
