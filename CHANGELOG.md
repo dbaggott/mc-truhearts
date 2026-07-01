@@ -11,6 +11,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 > in reverse-chronological order for human browsing. When shipping a new release,
 > add the version's file in `.modrinth/changelogs/` *and* prepend a new section here.
 
+## [1.2.1] — 2026-07-01
+
+Two small fixes based on player feedback.
+
+- The "TruHearts: on/off" toast now shows in **every gamemode**, not just
+  survival. Previously the toast was silent in creative and spectator —
+  the keybind fired and the state flipped, but you had no on-screen
+  confirmation until you switched back to survival and noticed the HP
+  overlay was gone. The toast now attaches to the same HUD slot as
+  vanilla's held-item-name message so it renders wherever that does.
+- Longer, more legible toast: **1.5 s total** (1 s hold + 0.5 s fade),
+  up from 0.75 s.
+
+The HP overlay itself is unchanged — still shown only when vanilla
+hearts are visible (i.e., not in creative or spectator).
+
 ## [1.2.0] — 2026-07-01
 
 Now runs on Minecraft 26.1 as well as 26.2 — one jar covers both.
@@ -49,6 +65,7 @@ First stable release.
 Minecraft 26.2 with Fabric Loader 0.19.3+. Client-only — does nothing on a dedicated
 server and isn't required there.
 
+[1.2.1]: https://github.com/dbaggott/mc-truhearts/releases/tag/v1.2.1
 [1.2.0]: https://github.com/dbaggott/mc-truhearts/releases/tag/v1.2.0
 [1.1.0]: https://github.com/dbaggott/mc-truhearts/releases/tag/v1.1.0
 [1.0.0]: https://github.com/dbaggott/mc-truhearts/releases/tag/v1.0.0
