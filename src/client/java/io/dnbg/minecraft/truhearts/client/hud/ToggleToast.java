@@ -34,13 +34,13 @@ public final class ToggleToast {
 	 * expires when intended even through frame-rate hitches; a client
 	 * tick can be arbitrarily slow.
 	 */
-	private static final long DEFAULT_LIFETIME_NANOS = 500_000_000L;
+	private static final long DEFAULT_LIFETIME_NANOS = 750_000_000L;
 	/**
 	 * Trailing fade-out window inside {@link #DEFAULT_LIFETIME_NANOS}.
 	 * If it equals the lifetime, the entire toast is a linear fade with
 	 * no full-opacity hold plateau.
 	 */
-	private static final long FADE_OUT_NANOS = 500_000_000L;
+	private static final long FADE_OUT_NANOS = 750_000_000L;
 	/**
 	 * Y offset from the screen bottom — matches the vertical band vanilla's
 	 * setOverlayMessage renders in (above the hotbar row and its bars).
