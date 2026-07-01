@@ -8,11 +8,12 @@
 
 A small client-side Minecraft mod (Fabric) that surfaces the *real* numerical health and damage values the game uses internally — no rounding to half-hearts.
 
-## Shipped (v1.0.0)
+## Shipped
 
 - **Your own current/max HP** as a float above the heart bar (e.g. `♥ 18.5 / 20`), with trailing-zero trim so a whole-number HP reads as `20`, not `20.00`.
 - **Absorption** shown inline in gold (`+ 8`) when active.
 - **Dynamic Y-offset** clears armor + absorption rows above the heart bar — the readout never overlaps vanilla HUD.
+- **In-game toggle** — bind a key under **Controls → TruHearts → Toggle HP overlay** to hide the readout on demand. Preference persists in `config/truhearts.json`. *(v1.1.0)*
 
 ## Planned
 

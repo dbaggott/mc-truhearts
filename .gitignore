@@ -4,6 +4,9 @@ build/
 out/
 classes/
 
+# Feature-branch worktrees.
+.worktrees/
+
 # Fabric Loom dev-runtime
 run/
 remappedSrc/

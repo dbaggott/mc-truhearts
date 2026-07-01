@@ -11,6 +11,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 > in reverse-chronological order for human browsing. When shipping a new release,
 > add the version's file in `.modrinth/changelogs/` *and* prepend a new section here.
 
+## [1.1.0] — 2026-07-01
+
+Toggle the HP readout on/off in-game.
+
+- New keybind **Toggle HP overlay** under **Controls → TruHearts**. Unbound by
+  default — assign it to whatever key you like.
+- Preference persists across game sessions in `config/truhearts.json`.
+- Action-bar message ("TruHearts: on/off") echoes the state change.
+
+No changes to how the readout looks or where it sits when it's on.
+
 ## [1.0.0] — 2026-06-30
 
 First stable release.
@@ -24,4 +35,5 @@ First stable release.
 Minecraft 26.2 with Fabric Loader 0.19.3+. Client-only — does nothing on a dedicated
 server and isn't required there.
 
+[1.1.0]: https://github.com/dbaggott/mc-truhearts/releases/tag/v1.1.0
 [1.0.0]: https://github.com/dbaggott/mc-truhearts/releases/tag/v1.0.0

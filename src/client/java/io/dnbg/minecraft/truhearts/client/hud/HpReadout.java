@@ -1,6 +1,7 @@
 package io.dnbg.minecraft.truhearts.client.hud;
 
 import io.dnbg.minecraft.truhearts.TruHearts;
+import io.dnbg.minecraft.truhearts.client.config.TruHeartsConfig;
 import java.util.Locale;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
@@ -69,6 +70,13 @@ public final class HpReadout {
 	}
 
 	private static void extract(GuiGraphicsExtractor extractor, DeltaTracker deltaTracker) {
+		// Cheap short-circuit before any HUD work when the user has toggled
+		// the overlay off. Cheaper than un/re-registering the element, and
+		// keeps the F3 element list stable.
+		if (!TruHeartsConfig.get().enabled) {
+			return;
+		}
+
 		Minecraft mc = Minecraft.getInstance();
 		LocalPlayer player = mc.player;
 		if (player == null) {
