@@ -28,16 +28,16 @@ import net.minecraft.network.chat.Component;
  */
 public final class ToggleToast {
 	/**
-	 * Default lifetime — deliberately a touch shorter than the ~3 s
-	 * vanilla {@code setOverlayMessage} holds its message. A toggle
-	 * confirmation is a peripheral cue, so 2 s of full opacity plus a
-	 * 0.5 s fade tail (2.5 s total) reads clearly without lingering.
+	 * Default lifetime — a toggle confirmation is a peripheral cue, so
+	 * hold it just long enough to notice (1 s at full opacity) and let
+	 * it fade out over the next 0.5 s. 1.5 s total, roughly half of
+	 * vanilla's ~3 s {@code setOverlayMessage} hold.
 	 *
 	 * <p>Wall-clock rather than tick-based so the message expires even
 	 * through frame-rate hitches — a client tick can be arbitrarily slow,
-	 * but a 2.5 s toast should still last 2.5 s.
+	 * but a 1.5 s toast should still last 1.5 s.
 	 */
-	private static final long DEFAULT_LIFETIME_NANOS = 2_500_000_000L;
+	private static final long DEFAULT_LIFETIME_NANOS = 1_500_000_000L;
 	/** Trailing fade-out window inside {@link #DEFAULT_LIFETIME_NANOS}. */
 	private static final long FADE_OUT_NANOS = 500_000_000L;
 	/**
