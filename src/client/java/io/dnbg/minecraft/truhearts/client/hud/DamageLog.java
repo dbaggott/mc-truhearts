@@ -13,6 +13,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 
 /**
@@ -47,7 +48,9 @@ public final class DamageLog {
 	private static final int ROW_HEIGHT = 10;
 
 	/** Same red as {@link HpReadout}'s HP number — visually pairs the two overlays. */
-	private static final int COLOR_AMOUNT = 0x00FF2A2A;
+	private static final int COLOR_DAMAGE = 0x00FF2A2A;
+	/** Bright green for heal amounts — parallel treatment to the damage red. */
+	private static final int COLOR_HEAL = 0x0055DD55;
 	/** Soft white for the source label; distinct from the amount without competing. */
 	private static final int COLOR_LABEL = 0x00E0E0E0;
 	/**
@@ -58,6 +61,14 @@ public final class DamageLog {
 	private static final int COLOR_DEATH = 0x00B0A0A0;
 	/** Prefix glyph on the death-marker line. Unicode SKULL AND CROSSBONES (U+2620). */
 	private static final String DEATH_GLYPH = "☠";
+
+	/**
+	 * Two heal events with the same source label that arrive within this
+	 * window coalesce into one growing entry, rather than spamming the log
+	 * with per-tick regen ticks. Timestamp on the coalesced entry updates
+	 * to the newest heal so it fades from "now".
+	 */
+	private static final long COALESCE_WINDOW_NANOS = 2_000_000_000L;
 
 	private static final Deque<Entry> entries = new ArrayDeque<>();
 
@@ -81,7 +92,8 @@ public final class DamageLog {
 	/**
 	 * Whether the player was alive at the end of the previous tick. Used to
 	 * detect the moment of death (alive → not alive transition) and drop a
-	 * {@link Entry#isDeath() death} marker into the log.
+	 * {@link Type#DEATH death marker} into the log, and to suppress the
+	 * respawn HP snap-to-full from getting logged as a "+ 20 Healed".
 	 */
 	private static boolean wasAlive = true;
 
@@ -133,23 +145,29 @@ public final class DamageLog {
 	 */
 	public static void onClientTickEnd(LocalPlayer player) {
 		float currentTotal = totalPool(player);
-		float amount = Float.isNaN(baselineTotal) ? 0f : baselineTotal - currentTotal;
+		float delta = Float.isNaN(baselineTotal) ? 0f : baselineTotal - currentTotal;
 		DamageSource source = pendingSource != null
 			? pendingSource
 			: player.getLastDamageSource();
+		boolean isAlive = player.getHealth() > 0f;
 
-		if (amount > 0.0001f && source != null) {
-			addEntry(new Entry(amount, labelFor(source), System.nanoTime(), false));
+		// The tick after death when HP snaps from 0 back to full is a respawn,
+		// not a heal — suppress it so the log doesn't get a spurious "+ 20 Healed".
+		boolean isRespawn = !wasAlive && isAlive;
+
+		if (delta > 0.0001f && source != null) {
+			addEntry(new Entry(delta, labelFor(source), System.nanoTime(), Type.DAMAGE));
+		} else if (delta < -0.0001f && !isRespawn) {
+			addOrCoalesceHeal(-delta, healLabelFor(player));
 		}
 
 		// Death detection — alive → dead transition on this tick. The killing
 		// damage entry was just added above; the death marker follows it so
 		// the "you died here" line is unmistakably distinct from any hit that
 		// happened to bring you low.
-		boolean isAlive = player.getHealth() > 0f;
 		if (wasAlive && !isAlive) {
 			String label = source != null ? "Died to " + labelFor(source) : "Died";
-			addEntry(new Entry(0f, label, System.nanoTime(), true));
+			addEntry(new Entry(0f, label, System.nanoTime(), Type.DEATH));
 		}
 		wasAlive = isAlive;
 
@@ -162,6 +180,43 @@ public final class DamageLog {
 		while (entries.size() > BUFFER_SIZE) {
 			entries.removeLast();
 		}
+	}
+
+	/**
+	 * Add a heal entry, or fold it into the newest existing entry if that
+	 * entry is a heal from the same source within {@link #COALESCE_WINDOW_NANOS}.
+	 * Regeneration (~1 HP every 2.5 s) would otherwise spam the log with
+	 * near-identical single-tick entries and push the interesting damage
+	 * lines off screen.
+	 */
+	private static void addOrCoalesceHeal(float amount, String label) {
+		long now = System.nanoTime();
+		Entry newest = entries.peekFirst();
+		if (newest != null
+			&& newest.type == Type.HEAL
+			&& newest.label.equals(label)
+			&& now - newest.timestampNanos < COALESCE_WINDOW_NANOS) {
+			// Fold into the existing entry — new amount, refreshed timestamp
+			// so it fades from "now" rather than the first tick of the burst.
+			entries.removeFirst();
+			entries.addFirst(new Entry(newest.amount + amount, label, now, Type.HEAL));
+		} else {
+			addEntry(new Entry(amount, label, now, Type.HEAL));
+		}
+	}
+
+	/**
+	 * Best-effort attribution for a positive-delta tick. We can only guess:
+	 * unlike damage, vanilla doesn't send a "heal event" packet, so there's
+	 * no {@code DamageSource} equivalent. Prefer the active status effect
+	 * that produces HP over time (Regeneration), otherwise the label is
+	 * generic.
+	 */
+	private static String healLabelFor(LocalPlayer player) {
+		if (player.hasEffect(MobEffects.REGENERATION)) {
+			return "Regeneration";
+		}
+		return "Healed";
 	}
 
 	/** Cleared on world exit / disconnect via {@code TruHeartsClient}. */
@@ -218,18 +273,24 @@ public final class DamageLog {
 			int y = hpReadoutBaselineY - ROW_HEIGHT * (i + 1);
 			int alpha = alphaForAge(now - e.timestampNanos);
 
-			if (e.isDeath) {
-				// Death marker: no amount, skull glyph prefix, dim warm gray
-				// so it reads as visually different from a hit.
-				int deathColor = (alpha << 24) | COLOR_DEATH;
-				extractor.text(font, DEATH_GLYPH + " " + e.label, x, y, deathColor, true);
-			} else {
-				int amountColor = (alpha << 24) | COLOR_AMOUNT;
-				int labelColor = (alpha << 24) | COLOR_LABEL;
-				String amountText = "- " + fmtAmount(e.amount);
-				extractor.text(font, amountText, x, y, amountColor, true);
-				int amountWidth = font.width(amountText);
-				extractor.text(font, "  " + e.label, x + amountWidth, y, labelColor, true);
+			switch (e.type) {
+				case DEATH -> {
+					// Skull glyph, no amount, dim warm gray so the death line
+					// reads as visually different from a hit.
+					int deathColor = (alpha << 24) | COLOR_DEATH;
+					extractor.text(font, DEATH_GLYPH + " " + e.label, x, y, deathColor, true);
+				}
+				case DAMAGE, HEAL -> {
+					// Signed amount + label. Sign and color are the only
+					// difference between damage and heal.
+					boolean isHeal = e.type == Type.HEAL;
+					int amountColor = (alpha << 24) | (isHeal ? COLOR_HEAL : COLOR_DAMAGE);
+					int labelColor = (alpha << 24) | COLOR_LABEL;
+					String amountText = (isHeal ? "+ " : "- ") + fmtAmount(e.amount);
+					extractor.text(font, amountText, x, y, amountColor, true);
+					int amountWidth = font.width(amountText);
+					extractor.text(font, "  " + e.label, x + amountWidth, y, labelColor, true);
+				}
 			}
 			i++;
 		}
@@ -295,15 +356,23 @@ public final class DamageLog {
 		return Character.toUpperCase(s.charAt(0)) + s.substring(1);
 	}
 
+	private enum Type {
+		DAMAGE,
+		HEAL,
+		DEATH
+	}
+
 	/**
-	 * A log line. Two shapes:
+	 * A log line. Three shapes, selected by {@link #type}:
 	 * <ul>
-	 * <li>Damage entry — {@code isDeath == false}, {@code amount > 0},
-	 *     rendered as {@code "- <amount>  <label>"}.
-	 * <li>Death marker — {@code isDeath == true}, {@code amount} unused,
-	 *     rendered as {@code "☠ <label>"} in the death color.
+	 * <li>{@link Type#DAMAGE}: {@code "- <amount>  <label>"} in red.
+	 * <li>{@link Type#HEAL}: {@code "+ <amount>  <label>"} in green.
+	 *     Coalesced across consecutive same-source ticks; see
+	 *     {@link #addOrCoalesceHeal(float, String)}.
+	 * <li>{@link Type#DEATH}: {@code "☠ <label>"} in dim warm gray.
+	 *     {@code amount} unused.
 	 * </ul>
 	 */
-	private record Entry(float amount, String label, long timestampNanos, boolean isDeath) {
+	private record Entry(float amount, String label, long timestampNanos, Type type) {
 	}
 }

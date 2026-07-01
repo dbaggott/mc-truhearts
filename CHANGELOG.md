@@ -25,6 +25,12 @@ A new overlay: the last few hits you took.
   `☠ Died to <source>` line drops into the stream right after the
   killing entry, rendered in a dim warm gray so it stands out from a
   regular hit.
+- **Heal entries.** Recovery shows up as green `+ <amount>  <label>`
+  (mirror of the damage red). Currently labeled `Regeneration` when
+  the mob effect is active, `Healed` otherwise. Consecutive
+  same-source heals within 2 s coalesce into one growing entry so
+  tick-by-tick regen doesn't spam. Respawn HP snap-to-full is
+  suppressed.
 - Amount is measured as **health + absorption delta**, so hits eaten by
   absorption count at what the player actually felt.
 - **Two-level toggle model.** The existing keybind is now the *master*
