@@ -34,13 +34,13 @@ public final class ToggleToast {
 	 * expires when intended even through frame-rate hitches; a client
 	 * tick can be arbitrarily slow.
 	 */
-	private static final long DEFAULT_LIFETIME_NANOS = 750_000_000L;
+	private static final long DEFAULT_LIFETIME_NANOS = 1_500_000_000L;
 	/**
 	 * Trailing fade-out window inside {@link #DEFAULT_LIFETIME_NANOS}.
 	 * If it equals the lifetime, the entire toast is a linear fade with
 	 * no full-opacity hold plateau.
 	 */
-	private static final long FADE_OUT_NANOS = 750_000_000L;
+	private static final long FADE_OUT_NANOS = 500_000_000L;
 	/**
 	 * Y offset from the screen bottom — matches the vertical band vanilla's
 	 * setOverlayMessage renders in (above the hotbar row and its bars).
@@ -54,8 +54,19 @@ public final class ToggleToast {
 	}
 
 	public static void register() {
+		// Attach after OVERLAY_MESSAGE — the vanilla element that hosts the
+		// held-item-name text and setOverlayMessage output. Two reasons:
+		//   1. OVERLAY_MESSAGE renders in every gamemode (including creative
+		//      and spectator), whereas HEALTH_BAR is gated on the hearts row
+		//      being visible. Attaching after HEALTH_BAR meant the toast was
+		//      silent when the player toggled the overlay in creative — the
+		//      keybind fired but the visual confirmation didn't, so switching
+		//      back to survival with an unexpectedly-off overlay was a
+		//      surprise.
+		//   2. Semantic fit: we ARE a transient overlay message, just one we
+		//      own instead of routing through Gui[.hud].setOverlayMessage.
 		HudElementRegistry.attachElementAfter(
-			VanillaHudElements.HEALTH_BAR,
+			VanillaHudElements.OVERLAY_MESSAGE,
 			TruHearts.id("toggle_toast"),
 			ToggleToast::extract
 		);
