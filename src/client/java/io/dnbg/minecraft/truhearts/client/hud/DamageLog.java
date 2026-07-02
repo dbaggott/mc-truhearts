@@ -120,6 +120,15 @@ public final class DamageLog {
 	 */
 	private static boolean wasAlive = true;
 
+	/**
+	 * Set when the player dies during the {@link #pendingTicks} arm window
+	 * so the death marker is deferred alongside the killing damage entry.
+	 * Without this the marker would fire on the mixin tick while the damage
+	 * entry fires a tick later, inverting the intended "killing hit above,
+	 * death marker below" ordering in the stack.
+	 */
+	private static boolean pendingDeath;
+
 	private DamageLog() {
 	}
 
@@ -178,6 +187,7 @@ public final class DamageLog {
 		// The tick after death when HP snaps from 0 back to full is a respawn,
 		// not a heal — suppress it so the log doesn't get a spurious "+ 20 Healed".
 		boolean isRespawn = !wasAlive && isAlive;
+		boolean justDied = wasAlive && !isAlive;
 
 		// DAMAGE PATH: pendingSource means the mixin fired this-tick-or-last.
 		// We delay attribution by one tick so ClientboundSetEntityDataPacket
@@ -189,20 +199,35 @@ public final class DamageLog {
 		//
 		// Baseline is frozen while pendingSource is set, so the delta we
 		// compute at tick-N+1 end is against the pre-hit pool captured at
-		// tick-N-1 end.
+		// tick-N-1 end. Death detection is also deferred through the same
+		// window so the death marker lands AFTER (below, at the bottom of
+		// the stack) the killing damage entry, matching the design's stated
+		// "hit above, death marker below" order.
 		if (pendingSource != null) {
 			if (pendingTicks == 0) {
 				// First tick — arm and wait one more tick for lagging packets.
 				pendingTicks = 1;
+				if (justDied) {
+					pendingDeath = true;
+				}
 			} else {
 				float damageDelta = Float.isNaN(baselineTotal) ? 0f : baselineTotal - currentTotal;
 				if (damageDelta > 0.0001f) {
 					addEntry(new Entry(damageDelta, labelFor(pendingSource), System.nanoTime(), Type.DAMAGE));
 				}
+				// Death marker follows the damage entry — covers both "died
+				// on the mixin tick" (pendingDeath) and "died on the realize
+				// tick" (justDied), all attributed to pendingSource.
+				if (pendingDeath || justDied) {
+					String label = "Died to " + labelFor(pendingSource);
+					addEntry(new Entry(0f, label, System.nanoTime(), Type.DEATH));
+					pendingDeath = false;
+				}
 				pendingSource = null;
 				pendingTicks = -1;
 			}
 		} else {
+			// No pending damage. Heal detection + ambient-death detection.
 			// HEAL uses HP-only delta, not totalPool. Absorption gains (golden
 			// apple's initial +N absorption) don't count as heals; the regen
 			// ticks that follow, if the player was injured, log the real HP
@@ -211,16 +236,14 @@ public final class DamageLog {
 			if (healDelta > 0.0001f && !isRespawn) {
 				addOrCoalesceHeal(healDelta, healLabelFor(player));
 			}
-		}
-
-		// Death detection — alive → dead transition. Independent of the
-		// damage/heal path so it fires even mid-delay-window.
-		if (wasAlive && !isAlive) {
-			DamageSource killer = pendingSource != null
-				? pendingSource
-				: player.getLastDamageSource();
-			String label = killer != null ? "Died to " + labelFor(killer) : "Died";
-			addEntry(new Entry(0f, label, System.nanoTime(), Type.DEATH));
+			// Ambient death (no damage event this tick — /kill without an
+			// intervening hit, void-below-void). Rare; the getLastDamageSource
+			// fallback keeps the "Died to <label>" form informative.
+			if (justDied) {
+				DamageSource killer = player.getLastDamageSource();
+				String label = killer != null ? "Died to " + labelFor(killer) : "Died";
+				addEntry(new Entry(0f, label, System.nanoTime(), Type.DEATH));
+			}
 		}
 		wasAlive = isAlive;
 
@@ -284,6 +307,7 @@ public final class DamageLog {
 		baselineTotal = Float.NaN;
 		pendingSource = null;
 		pendingTicks = -1;
+		pendingDeath = false;
 		wasAlive = true;
 	}
 
